@@ -27,22 +27,29 @@ initial_state(Nick, GUIAtom, ServerAtom) ->
 %   - NewState is the updated state of the client
 
 % Join channel
-handle(St, {join, Channel}) ->
+handle(St = #client_st{server = ServerAtom}, {join, Channel}) ->
     % TODO: Implement this function
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "join not implemented"}, St} ;
+    Nick = St#client_st.nick,
+    {reply, genserver:request(ServerAtom, {join, Channel, Nick}), St} ;
+    %{reply, {error, not_implemented, "join not implemented"}, St} ;
 
 % Leave channel
-handle(St, {leave, Channel}) ->
+handle(St  = #client_st{server = ServerAtom}, {leave, Channel}) ->
     % TODO: Implement this function
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "leave not implemented"}, St} ;
+    Nick = St#client_st.nick,
+    {reply,  genserver:request(ServerAtom,
+    {leave, Channel, Nick}), St} ;
 
 % Sending message (from GUI, to channel)
-handle(St, {message_send, Channel, Msg}) ->
+handle(St = #client_st{server = ServerAtom}, {message_send, Channel, Msg}) ->
     % TODO: Implement this function
     % {reply, ok, St} ;
-    {reply, {error, not_implemented, "message sending not implemented"}, St} ;
+    Nick = St#client_st.nick,
+
+    {reply,  genserver:request(ServerAtom,
+    {message_send, Channel,Msg,Nick}), St} ;
 
 % This case is only relevant for the distinction assignment!
 % Change nick (no check, local only)
