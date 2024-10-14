@@ -42,19 +42,20 @@ handle(St  = #client_st{server = ServerAtom}, {leave, Channel}) ->
     {reply,  genserver:request(ServerAtom,
     {leave, Channel, Nick}), St} ;
 
+
 % Sending message (from GUI, to channel)
 handle(St = #client_st{server = ServerAtom}, {message_send, Channel, Msg}) ->
     % TODO: Implement this function
     % {reply, ok, St} ;
     Nick = St#client_st.nick,
 
-    {reply,  genserver:request(ServerAtom,
-    {message_send, Channel,Msg,Nick}), St} ;
+    {reply,  genserver:request(Channel,
+    {message_send,Msg,Nick}), St} ;
 
 % This case is only relevant for the distinction assignment!
 % Change nick (no check, local only)
-handle(St, {nick, NewNick}) ->
-    {reply, ok, St#client_st{nick = NewNick}} ;
+handle(St = #client_st{server = ServerAtom, nick = OldNick}, {nick, NewNick}) ->
+    {reply, genserver:request(ServerAtom, {nick, St#client_st.nick, NewNick}), St#client_st{nick = NewNick}} ;
 
 % ---------------------------------------------------------------------------
 % The cases below do not need to be changed...
@@ -65,9 +66,11 @@ handle(St, whoami) ->
     {reply, St#client_st.nick, St} ;
 
 % Incoming message (from channel, to GUI)
-handle(St = #client_st{gui = GUI}, {message_receive, Channel, Nick, Msg}) ->
+handle(St = #client_st{gui = GUI, server = ServerAtom}, {message_receive, Channel, Nick, Msg}) ->
     gen_server:call(GUI, {message_receive, Channel, Nick++"> "++Msg}),
-    {reply, ok, St} ;
+    {reply, {genserver:request(ServerAtom,
+   {message_receive,Channel,St#client_st.nick,Msg} 
+)}, St} ;
 
 % Quit client via GUI
 handle(St, quit) ->
