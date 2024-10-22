@@ -31,6 +31,22 @@ handle(St = #channel_st{nickWpids = NP}, {leave, Nick}) ->
             {reply, {error, user_not_joined, "User not joined1"}, St}
     end;
 
+    handle(St = #channel_st{nickWpids = NP}, {nick_change, OldNick, NewNick}) ->
+        case dict:find(OldNick, NP) of
+        {ok, Pid} ->
+            case dict:find(NewNick, NP) of
+                {ok, _} ->
+                    {reply, {error, nick_taken, "Nickname already taken"}, St};
+                error ->
+                    NewNP = dict:erase(OldNick, NP),
+                    NewNP2 = dict:store(NewNick, Pid, NewNP),
+                    NewState = St#channel_st{nickWpids = NewNP2},
+                    {reply, ok, NewState}
+            end;
+        error ->
+            {reply, {error, user_not_found, "User not found"}, St}
+    end;
+
 
 handle(St = #channel_st{nickWpids = NP, name = Name}, {message_send, Channel,Msg, Nick}) ->
 case dict:find(Nick, NP) of

@@ -35,6 +35,18 @@ handle(State, delete_all_channels) ->
     ),
     {reply, ok, State#server_st{ channels = []}};
 
+    handle(State, {nick, OldNick, NewNick}) ->
+        Responses = lists:map(
+        fun(Ch) -> genserver:request(list_to_atom(Ch), {nick_change, OldNick, NewNick}) end,
+        State#server_st.channels
+    ),
+    case lists:any(fun({error, nick_taken, _}) -> true; (_) -> false end, Responses) of
+        true ->
+            {reply, {error, nick_taken, "Nickname already taken"}, State};
+        false ->
+            {reply, ok, State}
+    end;
+
 handle(State, {leave, Channel, Nick}) ->
     
     case lists:member(Channel, State#server_st.channels) of
